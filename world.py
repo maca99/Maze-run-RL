@@ -5,15 +5,16 @@ import pandas as pd
 class env:
 
     ## Here we define the constants of the environment
-    LAST_STATE = 6 #Si può implementare come unico stato o come doppio stato.
-    FIRST_STATE = 0 #Si deve implementare un metodo che dia uno stato iniziale casuale.
+    HEIGHT = 4 
+    WIDTH = 9 
+    #Si deve implementare un metodo che dia uno stato iniziale casuale.
     DISCOUNT_FACTOR = 0.5
 
 
-    def __init__(self, starting_grid = np.full((LAST_STATE-FIRST_STATE+1), 1/(LAST_STATE-FIRST_STATE+1))):
+    def __init__(self, starting_grid = np.full((HEIGHT * WIDTH), 1/(HEIGHT * WIDTH))):
         
         ## STATES AND ACTIONS
-        self.states = [env.build_state(i) for i in range(env.FIRST_STATE,env.LAST_STATE+1)]
+        self.states = [env.build_state(i,j) for i in range(1,env.HEIGHT) for j in range(1,env.WIDTH)]
 
         ## STARTING STATE
         self.starting_grid = starting_grid
