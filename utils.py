@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import random
 import matplotlib.pyplot as plt
 import networkx as nx
 from netgraph import Graph,InteractiveGraph,ArcDiagram
@@ -7,6 +8,7 @@ from netgraph import Graph,InteractiveGraph,ArcDiagram
 
 class state:
     def __init__(self, x, y, actions, reward):
+        self.name = "("+str(x)+","+str(y)+")"
         self.x = x
         self.y = y
         self.actions = actions
@@ -18,29 +20,40 @@ class action:
         self.name = name
 
 def build_probability_matrix(states, actions):
-    #penso sia da modificare dato che non si possono fare certe azioni da un determinato stato
-    matrix = np.zeros((len(states), len(states) * len(actions))) 
+
+    #matrix = np.zeros((len(states), len(states) * len(actions)))
+    matrix = np.zeros((len(states), len(states) * len(actions)))
     sa_dict = {}
-    i = 0
+    i = 1
 
     for state in states:
         for act in actions:
-            sa_dict[([state.x, state.y], act.name)] = i
+            sa_dict[(state.name), act.name ] = i
             i += 1
+
+
 
     for state in states:
         for action in state.actions:
             for next_state, ns_prob in action.function(state).items():   
-                matrix[[next_state.x , next_state.y], sa_dict[([state.x,state.y],action.name)]] = ns_prob
+                matrix[((next_state.x, next_state.y)), sa_dict[(state.name,action.name)]] = ns_prob
+    #for state in states:
+    #    for action in state.actions:
+    #        action_index = sa_dict[(state.name, action)]
+    #        transition_probs = action.function(state)
+    #        for next_state, ns_prob in transition_probs.function(state).items():   
+    #            matrix[next_state.x , sa_dict[state.name, action.name]] = ns_prob
 
     return matrix, sa_dict
 
 
+
 def build_rewards(states,actions):
-    rewards = np.zeros( (len(states),len(actions)) )
+    #rewards = np.zeros( (len(states),len(actions)) )
+    rewards = [[0] * len(actions) for _ in range(len(states))]
 
     act_dict = {}
-    i = 0
+    i = 1
 
     for action in actions:
         act_dict[action.name] = i
@@ -48,11 +61,9 @@ def build_rewards(states,actions):
 
     for state in states:
         for action in state.actions:
-            if ([state.x, state.y], action.name) in rewards:
-                rewards[[state.x, state.y], act_dict[action.name]] += state.reward
+            if ( state, action.name) in rewards:
+                rewards[state, action.name] += state.reward
             
-
-
     return rewards, act_dict
 
 def build_df(matrix, stateaction_dict):
@@ -65,10 +76,14 @@ def select_next_move(state):
     return action
 
 
-def select_first_state(grid):
-    pos = list(range(len(grid)))
-    state = np.random.choice(pos, p=grid)
-    return state
+def select_first_state():
+    def x():
+        x = random.randint(1, 9)
+        while x == 5:
+            x = random.randint(1, 9)
+        return x
+    y = random.randint(1, 4)
+    return ([x(),y])
 
 def plot_heatmap(result):
     

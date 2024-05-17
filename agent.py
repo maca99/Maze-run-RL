@@ -1,7 +1,7 @@
 import utils
 import numpy as np
 import pandas as pd
-from world import env
+from env import env
 import networkx as nx
 
 class agent:
@@ -71,18 +71,19 @@ class agent:
                 pol[k[0]] = k[1]
         return pol
     
-    """""   
+     
     #STEPS
     def step(self):
-        action_probabilities = [self.policy[(self.environment.current_state.number, action.name)] for action in self.actions]
+        action_probabilities = [self.policy[((self.environment.current_state.x,self.environment.current_state.y), action.name)] for action in self.actions]
         action = np.random.choice(list(self.actions), p=action_probabilities)
 
         return action
     
+    
     def sample_episode(self, length):
         self.environment = env()
         next_state = self.environment.starting_state 
-        episode = [next_state.number]
+        episode = [(next_state.x, next_state.y)]
 
         while len(episode) < length:
             next_action = agent.step(self)
@@ -90,7 +91,7 @@ class agent:
 
             next_state = np.random.choice(list(next_state.keys()), p=list(next_state.values()))
             self.environment.current_state = next_state
-            episode.append(next_state.number)
+            episode.append((next_state.x, next_state.y))
 
         return episode
 
@@ -99,15 +100,15 @@ class agent:
         self.policy_evaluation = agent.evaluate_policy(self,new_policy,self.environment)
         self.easy_policy = agent.get_easy_policy(self)
 
-
+  
     def evaluate_policy(self, policy, environment):
         r_pi = [0 for i in range(len(environment.states))]
 
         for state in environment.states:
             for action in state.actions:
-                r_pi[state.number] += policy[(state.number, action.name)] * environment.rewards_df.loc[state.number, action.name]
+                r_pi[(state.x,state.y)] += policy[((state.x, state.y)), action.name] * environment.rewards_df.loc[(state.x, state.y), action.name]
 
-        
+        """""
 
         p_pi = np.zeros( ( len(environment.states), len(environment.states) ) )
 
