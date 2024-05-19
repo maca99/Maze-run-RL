@@ -24,45 +24,39 @@ def build_probability_matrix(states, actions):
     #matrix = np.zeros((len(states), len(states) * len(actions)))
     matrix = np.zeros((len(states), len(states) * len(actions)))
     sa_dict = {}
-    i = 1
+    i = 0
 
     for state in states:
         for act in actions:
             sa_dict[(state.name), act.name ] = i
             i += 1
 
-
-
     for state in states:
         for action in state.actions:
             for next_state, ns_prob in action.function(state).items():   
                 matrix[((next_state.x, next_state.y)), sa_dict[(state.name,action.name)]] = ns_prob
-    #for state in states:
-    #    for action in state.actions:
-    #        action_index = sa_dict[(state.name, action)]
-    #        transition_probs = action.function(state)
-    #        for next_state, ns_prob in transition_probs.function(state).items():   
-    #            matrix[next_state.x , sa_dict[state.name, action.name]] = ns_prob
 
     return matrix, sa_dict
 
 
-
+#errata!!!!!!!!!!!!!!!!!!!!!!!
 def build_rewards(states,actions):
-    #rewards = np.zeros( (len(states),len(actions)) )
-    rewards = [[0] * len(actions) for _ in range(len(states))]
+    rewards = np.zeros( (len(states),len(actions)) )
+    #rewards = [[0] * len(actions) for _ in range(len(states))]
 
     act_dict = {}
-    i = 1
+    i = 0
 
     for action in actions:
         act_dict[action.name] = i
         i += 1
 
     for state in states:
+        j=0
         for action in state.actions:
-            if ( state, action.name) in rewards:
-                rewards[state, action.name] += state.reward
+            key = str(act_dict[action.name]) + state.name
+            rewards[j] += state.reward
+            j += 1
             
     return rewards, act_dict
 
