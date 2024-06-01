@@ -38,30 +38,26 @@ def build_probability_matrix(states, actions):
 
     return matrix, sa_dict
 
-
-#errata!!!!!!!!!!!!!!!!!!!!!!!
 def build_rewards(states,actions):
     rewards = np.zeros( (len(states),len(actions)) )
     #rewards = [[0] * len(actions) for _ in range(len(states))]
 
     act_dict = {}
     i = 0
-
+ 
     for action in actions:
         act_dict[action.name] = i
-        i += 1
+        i+=1
 
     for state in states:
-        j=0
+        
         for action in state.actions:
-            key = str(act_dict[action.name]) + state.name
-            rewards[j] += state.reward
-            j += 1
-            
+            rewards[[state.x,state.y]] += state.reward
+
     return rewards, act_dict
 
-def build_df(matrix, stateaction_dict):
-    return pd.DataFrame(matrix, columns = stateaction_dict.keys())
+def build_df(matrix, stateaction_dict, states):
+    return pd.DataFrame(matrix, columns = stateaction_dict.keys(), index=states)
 
 def select_next_move(state):
     action_list = state.actions
