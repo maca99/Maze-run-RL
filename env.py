@@ -7,6 +7,7 @@ class env:
     ## Here we define the constants of the environment
     len_y = 4 
     len_x = 8
+    tool = False
     #Si deve implementare un metodo che dia uno stato iniziale casuale.
     DISCOUNT_FACTOR = 0
 
@@ -37,7 +38,7 @@ class env:
         #self.rewards_df = utils.build_df(self.rewards, self.action_dict, self.states_index)
         
     
-    rewards = {'(1,1)':100,'(1,9)':100,'(6,3)':1000}
+    rewards = {'(3,1)':10,'(8,3)':100}
 
 
     ## ACTIONS
@@ -59,6 +60,8 @@ class env:
             return env.action_up(state)
         if action == 'down':
             return env.action_down(state)
+        if action == 'tunnel':
+            return env.action_tunnel(state)
 
     ## ACTIONS  
     def action_up(state):
@@ -91,8 +94,16 @@ class env:
         if((state.x,state.y) == (3,9)):
             return {env.build_state(2,4):1}
         return {state:1}
+    
+    def action_cook(state):
+        if(state.y == 4 and env.tool):
+            if(state.x == 1,8):
+                return{env.is_coocked(state.x,state.y):1}
+        return {state:1}
+
         
-    actions = {'left': action_left, 'right': action_right,'up': action_up, 'down': action_down, 'tunnel': action_tunnel}
+        
+    actions = {'left': action_left, 'right': action_right,'up': action_up, 'down': action_down, 'tunnel': action_tunnel, 'cook': action_cook}
         
     
     def build_action(function, name):
@@ -100,23 +111,24 @@ class env:
 
     def build_state(x,y):
         action_list = []
+        #catch the tool
+        if x == 1 and y == 3:
+            env.tool=True
+        if x == 8 and y == 3:
+            env.tool=True
 
+            
+        
         for action in env.actions:
-            if(action == "left" and (x,y) in env.left_forbidden):
-                continue
-            if(action == "right" and (x,y) in env.right_forbidden):
-                continue
-            if(action == "up" and (x,y) in env.up_forbidden):
-                continue
-            if(action == "down" and (x,y) in env.down_forbidden):
-                continue
-
             action_list.append( env.build_action( env.actions[action] ,action ))
 
         key = "("+str(x)+","+str(y)+")"
-        rew = env.rewards[key] if str(key) in env.rewards else 0
+        rew = env.rewards[key] if str(key) in env.rewards else -1
 
         return utils.state(x,y, action_list, rew)
     
+    def is_coocked(x,y):
+        action_list = []
+        return utils.state(x,y, action_list, 1000)
     
 
