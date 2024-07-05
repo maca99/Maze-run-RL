@@ -1,57 +1,49 @@
-import utils
 import numpy as np
 import pandas as pd
+
+class state:
+    def __init__(self, number):
+        self.number = number
 
 class env:
 
     ## Here we define the constants of the environment
-    len_y = 4 
-    len_x = 8
-    tool = False
-    #Si deve implementare un metodo che dia uno stato iniziale casuale.
     DISCOUNT_FACTOR = 0
 
 
-    def __init__(self):
+    def __init__(self,starting_state, starting_grid = np.full(32, 1/32)):
         
         ## STATES AND ACTIONS
-        self.states = [env.build_state(i,j) for i in range(1,env.len_x+1) for j in range(1,env.len_y+1)]
-        self.states_index = [state.name for state in self.states]
+        self.states = [env.build_state(i) for i in range(0,32)]
+        self.states_index = [state.number for state in self.states]
         ## STARTING STATE
-        number_state=utils.select_first_state()
-        #da modificare
-        self.starting_state = env.build_state(number_state[0],number_state[1])
-        self.current_state = self.starting_state
-
+        self.starting_grid = starting_grid
+        self.starting_state = starting_state
+        self.current_state = self.starting_state    
+        
         ## We build the actions
         self.actions = []
         for action in env.actions:
-            self.actions.append(env.build_action(env.actions[action], action))
-
-##Da MOdificare!!!!!!!!
-        
-        ## PROBABILITY MATRIX AND REWARDS
-        #self.probability_matrix, self.stateaction_dict = utils.build_probability_matrix(self.states, self.actions)
-        #self.probability_matrix_df = utils.build_df(self.probability_matrix, self.stateaction_dict, self.states_index)
-
-        #self.rewards, self.action_dict = utils.build_rewards(self.states, self.actions)
-        #self.rewards_df = utils.build_df(self.rewards, self.action_dict, self.states_index)
-        
+            self.actions.append(env.build_action(env.actions[action], action))    
     
-    rewards = {'(3,1)':10,'(8,3)':100}
+    rewards = {}
 
 
     ## ACTIONS
-        ##Azioni vietate
-    up_forbidden = [(1,1),(1,3),(2,1),(2,2),(3,1),(3,2),(7,1),(7,3),(8,3),(1,4),(2,4),(3,4),(4,4),(5,4),(6,4),(7,4),(8,4)]
+    up_forbidden = [(1),(2),(3),(7),(10),(11),(17),(23),(24),(25),(26),(27),(28),(29),(30),(31),(32)]
 
-    down_forbidden = [(1,2),(1,4),(2,2),(2,3),(2,4),(3,2),(3,3),(7,2),(7,4),(8,4),(1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),(8,1)]
+    down_forbidden = [(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(15),(18),(19),(25),(30),(31),(32)]
 
-    right_forbidden = [(1,3),(6,2),(6,3),(4,1),(4,2),(4,3),(4,4),(5,1),(5,2),(5,3),(5,4),(9,1),(9,2),(9,3),(9,4)]
+    right_forbidden = [(4),(8),(12),(14),(16),(17),(22),(24),(28),(31)]
 
-    left_forbidden = [(2,3),(7,2),(7,3),(1,1),(1,2),(1,3),(1,4),(5,1),(5,2),(5,3),(5,4),(6,1),(6,2),(6,3),(6,4),(8,2),(8,3)]
+    left_forbidden = [(1),(5),(9),(13),(15),(17),(18),(23),(25),(29)]
 
-    def ask_state(state,action):
+    tools = [(9),(20)]
+
+    stations = [(13),(21)]
+
+
+    def ask_state(state:state,action):
         if action == 'right':
            return env.action_right(state)
         if action == 'left': 
@@ -62,73 +54,64 @@ class env:
             return env.action_down(state)
         if action == 'tunnel':
             return env.action_tunnel(state)
+        if action == 'take':
+            return env.action_take(state)
 
     ## ACTIONS  
-    def action_up(state):
-        if((state.x,state.y) in env.up_forbidden):
-            return {state:1}
+    def action_up(state:state):
+        if(state.number in env.up_forbidden):
+            return state
         else:
-            return {env.build_state(state.x,state.y+1):1}
+            return env.build_state(state.number +8)
       
-    def action_down(state):
-        if((state.x,state.y) in env.down_forbidden):
-            return {state:1}
+    def action_down(state:state):
+        if(state.number in env.down_forbidden):
+            return state
         else:
-            return {env.build_state(state.x,state.y-1):1}
+            return env.build_state(state.number -8)
     
-    def action_right(state):
-        if((state.x,state.y) in env.right_forbidden):
-            return {state:1}
+    def action_right(state:state):
+        if(state.number in env.right_forbidden):
+            return state
         else:
-            return {env.build_state(state.x+1,state):1}
+            return env.build_state(state.number +1)
         
-    def action_left(state):
-        if((state.x,state.y) in env.left_forbidden):
-            return {state:1}
+    def action_left(state:state):
+        if(state.number in env.left_forbidden):
+            return state
         else:
-            return {env.build_state(state.x-1,state.y):1}
+            return env.build_state(state.number -1)
         
-    def action_tunnel(state):
-        if((state.x,state.y) == (2,4)):
-            return {env.build_state(3,9):1}
-        if((state.x,state.y) == (3,9)):
-            return {env.build_state(2,4):1}
-        return {state:1}
+    def action_tunnel(state:state):
+        if((state.number) == 12):
+            return env.build_state(24)
+        if((state.number) == (24)):
+            return env.build_state(12)
+        return state
     
-    def action_cook(state):
-        if(state.y == 4 and env.tool):
-            if(state.x == 1,8):
-                return{env.is_coocked(state.x,state.y):1}
-        return {state:1}
+    def action_take(state:state):
+        return state
 
         
-        
-    actions = {'left': action_left, 'right': action_right,'up': action_up, 'down': action_down, 'tunnel': action_tunnel, 'cook': action_cook}
-        
-    
-    def build_action(function, name):
-        return utils.action(function, name)
+    actions = {'left': action_left, 'right': action_right,'up': action_up, 'down': action_down, 'tunnel': action_tunnel, 'take': action_take}
 
-    def build_state(x,y):
+    def build_state(number):
         action_list = []
-        #catch the tool
-        if x == 1 and y == 3:
-            env.tool=True
-        if x == 8 and y == 3:
-            env.tool=True
-
-            
         
         for action in env.actions:
-            action_list.append( env.build_action( env.actions[action] ,action ))
+            action_list.append( env.actions[action])
 
-        key = "("+str(x)+","+str(y)+")"
-        rew = env.rewards[key] if str(key) in env.rewards else -1
-
-        return utils.state(x,y, action_list, rew)
+        return state(number)
     
-    def is_coocked(x,y):
+    def build_state(number):
         action_list = []
-        return utils.state(x,y, action_list, 1000)
+        
+        for action in env.actions:
+            action_list.append( env.actions[action])
+
+        rew = 0
+
+        return state(number)
+    
     
 
