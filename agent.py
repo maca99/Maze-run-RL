@@ -4,9 +4,9 @@ import random
 from env import env
 
 class agent:
-    def __init__(self,state: int,tool: bool):
-        self.state = env.build_state(state)
-        self.tool=tool
+    def __init__(self):
+        self.state = env.build_state(9)
+        self.tool = False
 
     actions = ['up', 'down', 'left', 'right','tunnel', 'take']
 
@@ -25,59 +25,62 @@ class agent:
     
     def make_step(self,state:state,action):
         step = False
-        reward = -5
+        reward = -1
         if action == 'left':
             state = self.action_left()
-        if action == 'right':
+        elif action == 'right':
              state = self.action_right()
-        if action == 'up':
+        elif action == 'up':
             state = self.action_up()
-        if action == 'down':
+        elif action == 'down':
             state = self.action_down()
-        if action == 'tunnel':
+        elif action == 'tunnel':
             state = self.action_tunnel()
-        if action == 'take':
-            state = state
-            if (state in env.tools and (not(self.tool))):
-                reward = 500
+            if(state.number not in env.tunnel):
+                reward = -2
+        elif action == 'take':
+            if (state.number in env.tools and (not(self.tool))):
                 self.tool=True
-        if(self.tool and state.number in self.stations):
-            reward = 250
+                reward = 200
+        if(self.tool and (state.number in env.stations)):
+            reward = 500
             step = True
+        else:
+            reward = -50
 
         return state, reward, step
 
     def improve_policy(self,episode:int, gamma:int, alpha:int):
-        tool_q_table = np.zeros((32, 7))
-        cook_q_table = np.zeros((32, 7))
+        tool_q_table = np.zeros((32, 6))
+        cook_q_table = np.zeros((32, 6))
 
         for i in range(episode):
-
+            print(i)
             epsilon = 1 / (i + 1)
 
             # I reset the state of the agent and the beater every episode
-            self.state = env.build_state(random.randint(1, 32))
+            self.state = env.build_state(random.randint(0, 31))
             self.tool = False
             state = self.state
             step = False
 
             while not step:
-                # Choose an action according to the epsilon-greedy policy
                 if np.random.uniform(0, 1) < epsilon:
                     action = np.random.choice(self.actions)
                 else:
-                    # Check if the beater is found and update the Q-table accordingly
-                    if not self.tool:
-                        action = self.actions[np.argmax(tool_q_table[state.number - 1])]
-                    else:
+                    if self.tool:
                         action = self.actions[np.argmax(cook_q_table[state.number - 1])]
+                    else:
+                        print(state.number)
+                        print(action)
+                        action = self.actions[np.argmax(tool_q_table[state.number - 1])]
 
-                # Update the state and the reward according to the action always checking if the beater is found
                 if self.tool:
+                    
                     next_state, reward, step = self.make_step(state,action)
                     cook_q_table[state.number - 1][self.actions.index(action)] += alpha * (
                             reward + gamma * np.max(cook_q_table[next_state.number - 1]) - cook_q_table[state.number - 1][self.actions.index(action)])
-                else:  
+                else: 
                     next_state, reward, step = self.make_step(state, action)
                     tool_q_table[state.number - 1][self.actions.index(action)] += alpha * (
                             reward + gamma * np.max(tool_q_table[next_state.number - 1]) - tool_q_table[state.number - 1][self.actions.index(action)])
@@ -85,14 +88,11 @@ class agent:
                 state = next_state
                 self.state = state
 
-        # Compute the optimal policy
-        # The first one is for the agent before the beater is found
-        # I used the np.argmax function to find the action with the highest value in the q-table
         tool_policy = np.argmax(tool_q_table, axis=1)
-        tool_policy = [env.actions[i] for i in tool_policy]
+        tool_policy = [self.actions[i] for i in tool_policy]
 
         # The second one is for the agent after the beater is found
         cook_policy = np.argmax(cook_q_table, axis=1)
-        cook_policy = [env.actions[i] for i in cook_policy]
+        cook_policy = [self.actions[i] for i in cook_policy]
 
         return tool_policy,cook_policy

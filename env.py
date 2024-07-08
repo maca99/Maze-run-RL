@@ -11,14 +11,11 @@ class env:
     DISCOUNT_FACTOR = 0
 
 
-    def __init__(self,starting_state, starting_grid = np.full(32, 1/32)):
+    def __init__(self,starting_state):
         
         ## STATES AND ACTIONS
         self.states = [env.build_state(i) for i in range(0,32)]
         self.states_index = [state.number for state in self.states]
-        ## STARTING STATE
-        self.starting_grid = starting_grid
-        self.starting_state = starting_state
         self.current_state = self.starting_state    
         
         ## We build the actions
@@ -30,17 +27,19 @@ class env:
 
 
     ## ACTIONS
-    up_forbidden = [(1),(2),(3),(7),(10),(11),(17),(23),(24),(25),(26),(27),(28),(29),(30),(31),(32)]
+    up_forbidden = [(0),(1),(2),(6),(9),(10),(16),(22),(23),(24),(25),(26),(27),(28),(29),(30),(31)]
 
-    down_forbidden = [(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(15),(18),(19),(25),(30),(31),(32)]
+    down_forbidden = [(0),(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(14),(17),(18),(24),(29),(30),(31)]
 
-    right_forbidden = [(4),(8),(12),(14),(16),(17),(22),(24),(28),(31)]
+    right_forbidden = [(3),(7),(11),(13),(15),(16),(21),(23),(27),(31)]
 
-    left_forbidden = [(1),(5),(9),(13),(15),(17),(18),(23),(25),(29)]
+    left_forbidden = [(0),(4),(8),(12),(14),(16),(17),(22),(24),(28)]
 
-    tools = [(9),(20)]
+    tunnel = [(11),(23)]
 
-    stations = [(13),(21)]
+    tools = [(8),(19)]
+
+    stations = [(12),(20)]
 
 
     def ask_state(state:state,action):
@@ -91,7 +90,7 @@ class env:
     
     def action_take(state:state):
         return state
-
+        
         
     actions = {'left': action_left, 'right': action_right,'up': action_up, 'down': action_down, 'tunnel': action_tunnel, 'take': action_take}
 
@@ -108,8 +107,6 @@ class env:
         
         for action in env.actions:
             action_list.append( env.actions[action])
-
-        rew = 0
 
         return state(number)
     
