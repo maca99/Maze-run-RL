@@ -1,98 +1,116 @@
 import numpy as np
-from env import state
-import random 
-from env import env
+import random
+from env import state, env
 
-class agent:
+
+class Agent:
+
+    ACTIONS = ['up', 'down', 'left', 'right', 'tunnel', 'take']
+    ACTION_INDEX = {a: i for i, a in enumerate(ACTIONS)}
+
+    REWARD_STEP = -1
+    REWARD_INVALID_MOVE = -15
+    REWARD_TUNNEL_BLOCKED = -20
+    REWARD_TAKE_TOOL = 200
+    REWARD_REACH_STATION = 5000
+
     def __init__(self):
         self.state = env.build_state(9)
         self.tool = False
 
-    actions = ['up', 'down', 'left', 'right','tunnel', 'take']
-
+    # --- Metodi pubblici di movimento: se env restituisce None, resto fermo ---
     def action_right(self):
-        return env.ask_state(self.state, 'right')
+        new_state = env.ask_state(self.state, 'right')
+        return new_state if new_state is not None else self.state
+
     def action_left(self):
-        return env.ask_state(self.state, 'left')
+        new_state = env.ask_state(self.state, 'left')
+        return new_state if new_state is not None else self.state
+
     def action_up(self):
-        return env.ask_state(self.state, 'up')
+        new_state = env.ask_state(self.state, 'up')
+        return new_state if new_state is not None else self.state
+
     def action_down(self):
-        return env.ask_state(self.state, 'down')
+        new_state = env.ask_state(self.state, 'down')
+        return new_state if new_state is not None else self.state
+
     def action_tunnel(self):
-        return env.ask_state(self.state, 'tunnel')
-    def action_take(self):
-        return env.ask_state(self.state, 'take')
-    
-    def make_step(self,state:state,action):
-        step = False
-        reward = -1
-        if action == 'left':
-            state = self.action_left()
-        elif action == 'right':
-             state = self.action_right()
-        elif action == 'up':
-            state = self.action_up()
-        elif action == 'down':
-            state = self.action_down()
+        new_state = env.ask_state(self.state, 'tunnel')
+        return new_state if new_state is not None else self.state
+
+    def move(self, direction: str):
+        new_state = env.ask_state(self.state, direction)
+        return new_state if new_state is not None else self.state
+
+    # --- Logica di step usata dal training ---
+    def make_step(self, state: state, has_tool: bool, action: str):
+        reward = self.REWARD_STEP
+        done = False
+        new_state = state
+
+        if action in ('left', 'right', 'up', 'down'):
+            candidate = env.ask_state(state, action)
+            if candidate is None:
+                reward = self.REWARD_INVALID_MOVE
+                # new_state resta = state (nessun cambiamento)
+            else:
+                new_state = candidate
+
         elif action == 'tunnel':
-            state = self.action_tunnel()
-            if(state.number not in env.tunnel):
-                reward = -2
+            candidate = env.ask_state(state, 'tunnel')
+            if candidate is None or candidate.number == state.number:
+                reward = self.REWARD_TUNNEL_BLOCKED
+                # new_state resta = state
+            else:
+                new_state = candidate
+
         elif action == 'take':
-            if (state.number in env.tools and (not(self.tool))):
-                self.tool=True
-                reward = 200
-        if(self.tool and (state.number in env.stations)):
-            reward = 500
-            step = True
-        else:
-            reward = -50
+            if state.number in env.tools and not has_tool:
+                has_tool = True
+                reward = self.REWARD_TAKE_TOOL
 
-        return state, reward, step
+        if has_tool and new_state.number in env.stations:
+            reward = self.REWARD_REACH_STATION
+            done = True
 
-    def improve_policy(self,episode:int, gamma:int, alpha:int):
-        tool_q_table = np.zeros((32, 6))
-        cook_q_table = np.zeros((32, 6))
+        return new_state, has_tool, reward, done
 
-        for i in range(episode):
-            print(i)
+    def _choose_action(self, q_table, state_number, epsilon):
+        if np.random.uniform(0, 1) < epsilon:
+            return np.random.choice(self.ACTIONS)
+        return self.ACTIONS[np.argmax(q_table[state_number])]
+
+    def improve_policy(self, episodes: int, gamma: float, alpha: float):
+        n_states = 32
+        tool_q_table = np.zeros((n_states, len(self.ACTIONS)))
+        cook_q_table = np.zeros((n_states, len(self.ACTIONS)))
+
+        for i in range(episodes):
             epsilon = 1 / (i + 1)
+            state = env.build_state(random.randint(0, n_states - 1))
+            has_tool = False
+            done = False
 
-            # I reset the state of the agent and the beater every episode
-            self.state = env.build_state(random.randint(0, 31))
-            self.tool = False
-            state = self.state
-            step = False
+            while not done:
+                q_table = cook_q_table if has_tool else tool_q_table
+                action = self._choose_action(q_table, state.number, epsilon)
 
-            while not step:
-                if np.random.uniform(0, 1) < epsilon:
-                    action = np.random.choice(self.actions)
-                else:
-                    if self.tool:
-                        action = self.actions[np.argmax(cook_q_table[state.number - 1])]
-                    else:
-                        print(state.number)
-                        print(action)
-                        action = self.actions[np.argmax(tool_q_table[state.number - 1])]
+                next_state, has_tool, reward, done = self.make_step(state, has_tool, action)
 
-                if self.tool:
-                    
-                    next_state, reward, step = self.make_step(state,action)
-                    cook_q_table[state.number - 1][self.actions.index(action)] += alpha * (
-                            reward + gamma * np.max(cook_q_table[next_state.number - 1]) - cook_q_table[state.number - 1][self.actions.index(action)])
-                else: 
-                    next_state, reward, step = self.make_step(state, action)
-                    tool_q_table[state.number - 1][self.actions.index(action)] += alpha * (
-                            reward + gamma * np.max(tool_q_table[next_state.number - 1]) - tool_q_table[state.number - 1][self.actions.index(action)])
-                        
+                a_idx = self.ACTION_INDEX[action]
+                q_table[state.number][a_idx] += alpha * (
+                    reward + gamma * np.max(q_table[next_state.number]) - q_table[state.number][a_idx]
+                )
+
                 state = next_state
-                self.state = state
 
-        tool_policy = np.argmax(tool_q_table, axis=1)
-        tool_policy = [self.actions[i] for i in tool_policy]
+            print(f"episodio {i} completato")
 
-        # The second one is for the agent after the beater is found
-        cook_policy = np.argmax(cook_q_table, axis=1)
-        cook_policy = [self.actions[i] for i in cook_policy]
+        self.state = state
+        self.tool = has_tool
 
-        return tool_policy,cook_policy
+        tool_policy = [self.ACTIONS[i] for i in np.argmax(tool_q_table, axis=1)]
+        cook_policy = [self.ACTIONS[i] for i in np.argmax(cook_q_table, axis=1)]
+
+        return {"tool": tool_policy, "cook": cook_policy}
